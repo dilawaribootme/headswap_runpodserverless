@@ -27,7 +27,7 @@ python main.py --listen 127.0.0.1 --port 8188 &
 
 # 5. Health Check (Using 'wget')
 echo "⏳ Waiting for ComfyUI API..."
-timeout 90s bash -c 'until wget --quiet --spider http://127.0.0.1:8188/history; do sleep 2; done'
+timeout 600s bash -c 'until wget --quiet --spider http://127.0.0.1:8188/history; do sleep 2; done'
 if [ $? -ne 0 ]; then
     echo "❌ ComfyUI failed to start within 90 seconds."
     exit 1
@@ -35,4 +35,5 @@ fi
 
 # 6. Start Handler (Using 'exec' for proper signal handling)
 echo "⚡ Starting RunPod Handler..."
+
 exec python rp_handler.py
