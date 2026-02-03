@@ -14,15 +14,18 @@ VOLUME_ROOT = "/runpod-volume"
 # The Exact Map: [Volume Path] -> [Hugging Face URL]
 # Updated for the Qwen/BFS "Universal Head Swapper" Workflow
 MODEL_MAP = {
-    # 1. VAE
+    # 1. VAE (Found in Qwen-Image_ComfyUI repo)
+    # CORRECTION: Removed "-Edit" from the URL
     f"{VOLUME_ROOT}/models/vae/qwen_image_vae.safetensors": 
-        "https://huggingface.co/Comfy-Org/Qwen-Image-Edit_ComfyUI/resolve/main/split_files/vae/qwen_image_vae.safetensors",
+        "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI/resolve/main/split_files/vae/qwen_image_vae.safetensors",
     
-    # 2. CLIP (Qwen 2.5 VL)
+    # 2. CLIP (Qwen 2.5 VL) (Found in Qwen-Image_ComfyUI repo)
+    # CORRECTION: Removed "-Edit" from the URL
     f"{VOLUME_ROOT}/models/clip/qwen/qwen_2.5_vl_7b_fp8_scaled.safetensors": 
-        "https://huggingface.co/Comfy-Org/Qwen-Image-Edit_ComfyUI/resolve/main/split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors",
+        "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI/resolve/main/split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors",
     
-    # 3. UNET (The 20GB Giant)
+    # 3. UNET (The 20GB Giant) (Found in Qwen-Image-Edit_ComfyUI repo)
+    # NOTE: This one stays as "-Edit" because the UNET is specific to the Edit model
     f"{VOLUME_ROOT}/models/unet/qwen/qwen_image_edit_2509_fp8_e4m3fn.safetensors": 
         "https://huggingface.co/Comfy-Org/Qwen-Image-Edit_ComfyUI/resolve/main/split_files/diffusion_models/qwen_image_edit_2509_fp8_e4m3fn.safetensors",
     
