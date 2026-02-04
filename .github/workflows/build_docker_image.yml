@@ -40,31 +40,30 @@ jobs:
       - name: Extract Metadata
         id: meta
         run: |
+          # 1. Check if docker-bake.hcl exists (Crash Protection)
+          if [ ! -f "docker-bake.hcl" ]; then
+            echo "❌ CRITICAL: docker-bake.hcl is missing!"
+            exit 1
+          fi
+
+          # 2. Read App Name and Version
           APP=$(grep 'variable "APP"' -A 2 docker-bake.hcl | grep 'default' | sed 's/.*"\(.*\)"/\1/')
           RELEASE=$(grep 'variable "RELEASE"' -A 2 docker-bake.hcl | grep 'default' | sed 's/.*"\(.*\)"/\1/')
           
           echo "APP=$APP" >> $GITHUB_ENV
           echo "RELEASE=$RELEASE" >> $GITHUB_ENV
           
-          echo "✅ Detected: $APP version $RELEASE"
-
-      - name: Create Override File
-        run: |
-          cat > docker-bake.override.hcl << EOF
-          target "default" {
-            tags = ["ghcr.io/${{ github.repository_owner }}/${{ env.APP }}:${{ env.RELEASE }}"]
-          }
-          EOF
+          echo "✅ Configuration: $APP (v$RELEASE)"
 
       - name: Build and Push
-        uses: docker/bake-action@v6   # <--- THE FIX: Changed v4 to v6
+        uses: docker/bake-action@v6
         with:
-          files: |
-            ./docker-bake.hcl
-            ./docker-bake.override.hcl
+          # Only use the main file (We removed the missing override file)
+          files: ./docker-bake.hcl
           push: true
-          # FIX: Explicitly set the builder to ensure compatibility
+          # The Magic Fix: We override the tag HERE instead of using a file
           set: |
+            default.tags=ghcr.io/${{ github.repository_owner }}/${{ env.APP }}:${{ env.RELEASE }}
             *.cache-from=type=gha
             *.cache-to=type=gha,mode=max
 
