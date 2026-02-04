@@ -1,96 +1,111 @@
 {
-  "436": {
-    "inputs": { "strength": 1, "model": ["441", 0] },
-    "class_type": "CFGNorm"
-  },
-  "437": {
+  "1": {
     "inputs": { "vae_name": "qwen_image_vae.safetensors" },
-    "class_type": "VAELoader"
+    "class_type": "VAELoader",
+    "_meta": { "title": "LOAD_VAE" }
   },
-  "438": {
+  "2": {
     "inputs": {
       "clip_name": "qwen/qwen_2.5_vl_7b_fp8_scaled.safetensors",
       "type": "qwen_image",
       "device": "default"
     },
-    "class_type": "CLIPLoader"
+    "class_type": "CLIPLoader",
+    "_meta": { "title": "LOAD_CLIP" }
   },
-  "439": {
+  "3": {
     "inputs": {
       "unet_name": "qwen/qwen_image_edit_2509_fp8_e4m3fn.safetensors",
       "weight_dtype": "default"
     },
-    "class_type": "UNETLoader"
+    "class_type": "UNETLoader",
+    "_meta": { "title": "LOAD_UNET" }
   },
-  "440": {
+  "4": {
+    "inputs": {
+      "lora_name": "qwen/bfs_head_v3_qwen_image_edit_2509.safetensors",
+      "strength_model": 1.0,
+      "model": ["3", 0]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": { "title": "LOAD_BFS_LORA" }
+  },
+  "5": {
+    "inputs": { "shift": 1.0, "model": ["4", 0] },
+    "class_type": "ModelSamplingAuraFlow",
+    "_meta": { "title": "AURAFLOW_SAMPLING" }
+  },
+  "6": {
+    "inputs": { "strength": 1.0, "model": ["5", 0] },
+    "class_type": "CFGNorm",
+    "_meta": { "title": "CFG_NORM" }
+  },
+  "7": {
+    "inputs": { "image": "INPUT_HEAD_PLACEHOLDER.png" },
+    "class_type": "LoadImage",
+    "_meta": { "title": "HEAD_IMAGE" }
+  },
+  "8": {
+    "inputs": { "image": "INPUT_BODY_PLACEHOLDER.png" },
+    "class_type": "LoadImage",
+    "_meta": { "title": "BODY_IMAGE" }
+  },
+  "9": {
+    "inputs": { "image": ["8", 0] },
+    "class_type": "FluxKontextImageScale",
+    "_meta": { "title": "KONTEXT_SCALE_BODY" }
+  },
+  "10": {
     "inputs": {
       "prompt": "",
-      "clip": ["438", 0],
-      "vae": ["437", 0],
-      "image1": ["460", 0],
-      "image2": ["448", 0]
+      "clip": ["2", 0],
+      "vae": ["1", 0],
+      "image1": ["9", 0],
+      "image2": ["7", 0]
     },
-    "class_type": "TextEncodeQwenImageEditPlus"
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": { "title": "NEGATIVE_ENCODER" }
   },
-  "441": {
-    "inputs": { "shift": 1, "model": ["459", 0] },
-    "class_type": "ModelSamplingAuraFlow"
-  },
-  "442": {
+  "11": {
     "inputs": {
       "prompt": "head_swap: start with Picture 1 as the base image, keeping its lighting, environment, and background. remove the head from Picture 1 completely and replace it with the head from Picture 2. ensure the head and body have correct anatomical proportions, and blend the skin tones, shadows, and lighting naturally so the final result appears as one coherent, realistic person.",
-      "clip": ["438", 0],
-      "vae": ["437", 0],
-      "image1": ["460", 0],
-      "image2": ["448", 0]
+      "clip": ["2", 0],
+      "vae": ["1", 0],
+      "image1": ["9", 0],
+      "image2": ["7", 0]
     },
-    "class_type": "TextEncodeQwenImageEditPlus"
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": { "title": "POSITIVE_ENCODER" }
   },
-  "443": {
-    "inputs": { "pixels": ["460", 0], "vae": ["437", 0] },
-    "class_type": "VAEEncode"
+  "12": {
+    "inputs": { "pixels": ["9", 0], "vae": ["1", 0] },
+    "class_type": "VAEEncode",
+    "_meta": { "title": "ENCODE_BODY_LATENT" }
   },
-  "444": {
-    "inputs": { "samples": ["447", 0], "vae": ["437", 0] },
-    "class_type": "VAEDecode"
-  },
-  "447": {
+  "13": {
     "inputs": {
       "seed": 43,
       "steps": 20,
-      "cfg": 2,
+      "cfg": 2.0,
       "sampler_name": "euler",
       "scheduler": "simple",
-      "denoise": 1,
-      "model": ["436", 0],
-      "positive": ["442", 0],
-      "negative": ["440", 0],
-      "latent_image": ["443", 0]
+      "denoise": 1.0,
+      "model": ["6", 0],
+      "positive": ["11", 0],
+      "negative": ["10", 0],
+      "latent_image": ["12", 0]
     },
-    "class_type": "KSampler"
+    "class_type": "KSampler",
+    "_meta": { "title": "SAMPLER" }
   },
-  "448": {
-    "inputs": { "image": "INPUT_HEAD_PLACEHOLDER.png" },
-    "class_type": "LoadImage"
+  "14": {
+    "inputs": { "samples": ["13", 0], "vae": ["1", 0] },
+    "class_type": "VAEDecode",
+    "_meta": { "title": "DECODE_OUTPUT" }
   },
-  "449": {
-    "inputs": { "image": "INPUT_BODY_PLACEHOLDER.png" },
-    "class_type": "LoadImage"
-  },
-  "458": {
-    "inputs": { "filename_prefix": "head swap", "images": ["444", 0] },
-    "class_type": "SaveImage"
-  },
-  "459": {
-    "inputs": {
-      "lora_name": "qwen/bfs_head_v3_qwen_image_edit_2509.safetensors",
-      "strength_model": 1,
-      "model": ["439", 0]
-    },
-    "class_type": "LoraLoaderModelOnly"
-  },
-  "460": {
-    "inputs": { "image": ["449", 0] },
-    "class_type": "FluxKontextImageScale"
+  "15": {
+    "inputs": { "filename_prefix": "head_swap", "images": ["14", 0] },
+    "class_type": "SaveImage",
+    "_meta": { "title": "SAVE_OUTPUT" }
   }
 }

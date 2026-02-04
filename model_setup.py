@@ -69,18 +69,16 @@ def ensure_models_exist():
         logger.error(f"❌ CRITICAL ERROR: Volume not found at {VOLUME_ROOT}. Did you set the Mount Path?")
         return
 
-    logger.info("🔍 [Hybrid-Downloader] Checking Model Files...")
+    logger.info("🔍 [Hybrid-Downloader] Processing Model Files...")
     
     for file_path, url in MODEL_MAP.items():
-        if os.path.exists(file_path):
-            # OPTIONAL: Check file size here if you want to be extra safe
-            logger.info(f"✅ Found: {os.path.basename(file_path)}")
-        else:
-            # File is missing -> Call the Wget function
-            success = download_with_wget(url, file_path)
-            if not success:
-                logger.error("⚠️ Stopping setup due to download failure.")
-                return
+        # FIX: We REMOVED the "if os.path.exists" check.
+        # We let wget decide if it needs to resume or if the file is complete.
+        success = download_with_wget(url, file_path)
+        
+        if not success:
+            logger.error("⚠️ Stopping setup due to download failure.")
+            return
 
 if __name__ == "__main__":
     ensure_models_exist()

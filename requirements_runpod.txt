@@ -1,0 +1,18 @@
+runpod
+requests
+einops==0.8.0
+accelerate==0.27.2
+transformers==4.48.2
+safetensors==0.4.5
+sentencepiece
+protobuf==4.25.3
+Pillow==10.4.0
+opencv-python-headless==4.10.0.84
+numpy==1.26.4
+# --- Hotfix Libraries (Crucial for ComfyUI v0.12+) ---
+comfy-aimdo
+torchsde
+av
+spandrel
+scipy
+comfyui-frontend-package
