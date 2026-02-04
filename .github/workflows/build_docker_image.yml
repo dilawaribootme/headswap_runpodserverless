@@ -1,11 +1,9 @@
 name: Build Docker Image
 
 on:
-  # 1. AUTOMATIC TRIGGER: Runs when you push changes to 'main'
   push:
     branches:
       - main
-    # 2. WATCH LIST: Only build if one of YOUR files changes
     paths:
       - 'Dockerfile'
       - 'rp_handler.py'
@@ -16,8 +14,6 @@ on:
       - 'extra_model_paths.yaml'
       - 'workflow_api.json'
       - 'docker-bake.hcl'
-  
-  # 3. MANUAL TRIGGER: Allows you to click "Run workflow" in the Actions tab
   workflow_dispatch:
 
 jobs:
@@ -25,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write # Necessary for pushing to GitHub Container Registry (ghcr.io)
+      packages: write
 
     steps:
       - name: Checkout Code
@@ -44,7 +40,6 @@ jobs:
       - name: Extract Metadata
         id: meta
         run: |
-          # Grabs the App Name and Version from your docker-bake.hcl file
           APP=$(grep 'variable "APP"' -A 2 docker-bake.hcl | grep 'default' | sed 's/.*"\(.*\)"/\1/')
           RELEASE=$(grep 'variable "RELEASE"' -A 2 docker-bake.hcl | grep 'default' | sed 's/.*"\(.*\)"/\1/')
           
@@ -54,7 +49,6 @@ jobs:
           echo "✅ Detected: $APP version $RELEASE"
 
       - name: Create Override File
-        # Forces the build to go to GitHub Registry (ghcr.io)
         run: |
           cat > docker-bake.override.hcl << EOF
           target "default" {
@@ -63,12 +57,16 @@ jobs:
           EOF
 
       - name: Build and Push
-        uses: docker/bake-action@v4
+        uses: docker/bake-action@v6   # <--- THE FIX: Changed v4 to v6
         with:
           files: |
             ./docker-bake.hcl
             ./docker-bake.override.hcl
           push: true
+          # FIX: Explicitly set the builder to ensure compatibility
+          set: |
+            *.cache-from=type=gha
+            *.cache-to=type=gha,mode=max
 
       - name: Build Summary
         run: |
