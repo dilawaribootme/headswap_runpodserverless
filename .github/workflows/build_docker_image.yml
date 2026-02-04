@@ -1,0 +1,77 @@
+name: Build Docker Image
+
+on:
+  # 1. AUTOMATIC TRIGGER: Runs when you push changes to 'main'
+  push:
+    branches:
+      - main
+    # 2. WATCH LIST: Only build if one of YOUR files changes
+    paths:
+      - 'Dockerfile'
+      - 'rp_handler.py'
+      - 'model_setup.py'
+      - 'start.sh'
+      - 'setup.sh'
+      - 'requirements_runpod.txt'
+      - 'extra_model_paths.yaml'
+      - 'workflow_api.json'
+      - 'docker-bake.hcl'
+  
+  # 3. MANUAL TRIGGER: Allows you to click "Run workflow" in the Actions tab
+  workflow_dispatch:
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write # Necessary for pushing to GitHub Container Registry (ghcr.io)
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Metadata
+        id: meta
+        run: |
+          # Grabs the App Name and Version from your docker-bake.hcl file
+          APP=$(grep 'variable "APP"' -A 2 docker-bake.hcl | grep 'default' | sed 's/.*"\(.*\)"/\1/')
+          RELEASE=$(grep 'variable "RELEASE"' -A 2 docker-bake.hcl | grep 'default' | sed 's/.*"\(.*\)"/\1/')
+          
+          echo "APP=$APP" >> $GITHUB_ENV
+          echo "RELEASE=$RELEASE" >> $GITHUB_ENV
+          
+          echo "✅ Detected: $APP version $RELEASE"
+
+      - name: Create Override File
+        # Forces the build to go to GitHub Registry (ghcr.io)
+        run: |
+          cat > docker-bake.override.hcl << EOF
+          target "default" {
+            tags = ["ghcr.io/${{ github.repository_owner }}/${{ env.APP }}:${{ env.RELEASE }}"]
+          }
+          EOF
+
+      - name: Build and Push
+        uses: docker/bake-action@v4
+        with:
+          files: |
+            ./docker-bake.hcl
+            ./docker-bake.override.hcl
+          push: true
+
+      - name: Build Summary
+        run: |
+          echo "### 🚀 Build Successful!" >> $GITHUB_STEP_SUMMARY
+          echo "Your new image is ready at:" >> $GITHUB_STEP_SUMMARY
+          echo "**ghcr.io/${{ github.repository_owner }}/${{ env.APP }}:${{ env.RELEASE }}**" >> $GITHUB_STEP_SUMMARY
