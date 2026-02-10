@@ -10,8 +10,9 @@ variable "APP" {
     default = "runpod-worker-inswapper"
 }
 
+# CHANGE: Bumped version to 5.2.2 to include the setup.sh fix
 variable "RELEASE" {
-    default = "5.2.1"
+    default = "5.2.2"
 }
 
 variable "CU_VERSION" {
