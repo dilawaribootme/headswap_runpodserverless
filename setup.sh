@@ -19,7 +19,15 @@ if [ ! -d "ComfyUI_LayerStyle" ]; then
     rm -rf ComfyUI_LayerStyle/.git
 fi
 
-# 4. INSTALL DEPENDENCIES
+# 4. INSTALL COMFYUI ESSENTIALS (Required for CFGNorm)
+# This prevents the "Unknown Node: CFGNorm" crash in your workflow
+if [ ! -d "ComfyUI_essentials" ]; then
+    echo "⬇️ Cloning ComfyUI_essentials..."
+    git clone --depth 1 https://github.com/cubiq/ComfyUI_essentials.git
+    rm -rf ComfyUI_essentials/.git
+fi
+
+# 5. INSTALL DEPENDENCIES
 echo "📦 Installing Custom Node Dependencies..."
 
 if [ -f "Comfyui-QwenEditUtils/requirements.txt" ]; then
@@ -28,6 +36,10 @@ fi
 
 if [ -f "ComfyUI_LayerStyle/requirements.txt" ]; then
     pip install --no-cache-dir -r ComfyUI_LayerStyle/requirements.txt
+fi
+
+if [ -f "ComfyUI_essentials/requirements.txt" ]; then
+    pip install --no-cache-dir -r ComfyUI_essentials/requirements.txt
 fi
 
 # 🚨 CRITICAL FIX: Force Numpy back to 1.26.4
