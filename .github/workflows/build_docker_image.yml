@@ -39,6 +39,7 @@ jobs:
 
       - name: Extract Metadata
         id: meta
+        shell: bash
         run: |
           # 1. Check if docker-bake.hcl exists
           if [ ! -f "docker-bake.hcl" ]; then
@@ -46,11 +47,22 @@ jobs:
             exit 1
           fi
 
-          # 2. Read App Name and Version
-          # tr -d '[:space:]' removes ALL invisible characters (newlines, returns, spaces)
-          APP=$(grep 'variable "APP"' -A 2 docker-bake.hcl | grep 'default' | sed 's/.*"\(.*\)"/\1/' | tr -d '[:space:]')
-          RELEASE=$(grep 'variable "RELEASE"' -A 2 docker-bake.hcl | grep 'default' | sed 's/.*"\(.*\)"/\1/' | tr -d '[:space:]')
+          # 2. Extract RAW values using grep and cut
+          RAW_APP=$(grep -A 2 'variable "APP"' docker-bake.hcl | grep 'default' | cut -d'"' -f2)
+          RAW_RELEASE=$(grep -A 2 'variable "RELEASE"' docker-bake.hcl | grep 'default' | cut -d'"' -f2)
+
+          # 3. CLEANUP using Bash Native Substitution (The "Nuclear Option")
+          # This syntax ${VAR//pattern/replacement} removes ALL:
+          # \r (Carriage Return), \n (Newline), \t (Tab), and Spaces
+          APP="${RAW_APP//[$'\t\r\n ']/}"
+          RELEASE="${RAW_RELEASE//[$'\t\r\n ']/}"
+
+          # 4. Debug: Print to logs to prove it's clean
+          echo "🔍 Debugging Cleaned Variables:"
+          echo "APP: '$APP'"
+          echo "RELEASE: '$RELEASE'"
           
+          # 5. Export to GitHub Environment
           echo "APP=$APP" >> $GITHUB_ENV
           echo "RELEASE=$RELEASE" >> $GITHUB_ENV
           
