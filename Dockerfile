@@ -49,4 +49,5 @@ COPY model_setup.py .
 RUN sed -i 's/\r$//' start.sh && chmod +x start.sh
 
 # Start the container
+
 CMD ["./start.sh"]
