@@ -46,9 +46,9 @@ jobs:
             exit 1
           fi
 
-          # 2. Read App Name and Version
-          APP=$(grep 'variable "APP"' -A 2 docker-bake.hcl | grep 'default' | sed 's/.*"\(.*\)"/\1/')
-          RELEASE=$(grep 'variable "RELEASE"' -A 2 docker-bake.hcl | grep 'default' | sed 's/.*"\(.*\)"/\1/')
+          # 2. Read App Name and Version (The | tr -d '\r' removes the invisible Windows characters)
+          APP=$(grep 'variable "APP"' -A 2 docker-bake.hcl | grep 'default' | sed 's/.*"\(.*\)"/\1/' | tr -d '\r')
+          RELEASE=$(grep 'variable "RELEASE"' -A 2 docker-bake.hcl | grep 'default' | sed 's/.*"\(.*\)"/\1/' | tr -d '\r')
           
           echo "APP=$APP" >> $GITHUB_ENV
           echo "RELEASE=$RELEASE" >> $GITHUB_ENV
