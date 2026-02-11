@@ -47,22 +47,22 @@ jobs:
             exit 1
           fi
 
-          # 2. Extract RAW values using grep and cut
+          # 2. Extract RAW values (Get the line with the value)
           RAW_APP=$(grep -A 2 'variable "APP"' docker-bake.hcl | grep 'default' | cut -d'"' -f2)
           RAW_RELEASE=$(grep -A 2 'variable "RELEASE"' docker-bake.hcl | grep 'default' | cut -d'"' -f2)
 
-          # 3. CLEANUP using Bash Native Substitution (The "Nuclear Option")
-          # This syntax ${VAR//pattern/replacement} removes ALL:
-          # \r (Carriage Return), \n (Newline), \t (Tab), and Spaces
-          APP="${RAW_APP//[$'\t\r\n ']/}"
-          RELEASE="${RAW_RELEASE//[$'\t\r\n ']/}"
+          # 3. WHITELISTING (The Fix that CANNOT fail)
+          # 'tr -cd' deletes everything that is NOT in the list.
+          # We only keep: Letters (a-z, A-Z), Numbers (0-9), Dots (.), and Dashes (-)
+          APP=$(echo "$RAW_APP" | tr -cd 'a-zA-Z0-9.-')
+          RELEASE=$(echo "$RAW_RELEASE" | tr -cd 'a-zA-Z0-9.-')
 
-          # 4. Debug: Print to logs to prove it's clean
-          echo "🔍 Debugging Cleaned Variables:"
+          # 4. Debug: Prove it's clean
+          echo "🔍 Cleaned Variables:"
           echo "APP: '$APP'"
           echo "RELEASE: '$RELEASE'"
           
-          # 5. Export to GitHub Environment
+          # 5. Export
           echo "APP=$APP" >> $GITHUB_ENV
           echo "RELEASE=$RELEASE" >> $GITHUB_ENV
           
