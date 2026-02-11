@@ -3,11 +3,11 @@ variable "REGISTRY" {
 }
 
 variable "REGISTRY_USER" {
-    default = "ashleykza"
+    default = "dilawaribootme"
 }
 
 variable "APP" {
-    default = "runpod-worker-inswapper"
+    default = "runpod-worker-qwen-headswap"
 }
 
 # CHANGE: Bumped version to 5.2.2 to include the setup.sh fix
