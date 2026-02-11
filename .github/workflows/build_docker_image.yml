@@ -46,9 +46,9 @@ jobs:
             exit 1
           fi
 
-          # 2. Read App Name and Version (The | tr -d '\r' removes the invisible Windows characters)
-          APP=$(grep 'variable "APP"' -A 2 docker-bake.hcl | grep 'default' | sed 's/.*"\(.*\)"/\1/' | tr -d '\r')
-          RELEASE=$(grep 'variable "RELEASE"' -A 2 docker-bake.hcl | grep 'default' | sed 's/.*"\(.*\)"/\1/' | tr -d '\r')
+          # 2. Read App Name and Version (Using \015 to strictly remove Carriage Returns)
+          APP=$(grep 'variable "APP"' -A 2 docker-bake.hcl | grep 'default' | sed 's/.*"\(.*\)"/\1/' | tr -d '\015')
+          RELEASE=$(grep 'variable "RELEASE"' -A 2 docker-bake.hcl | grep 'default' | sed 's/.*"\(.*\)"/\1/' | tr -d '\015')
           
           echo "APP=$APP" >> $GITHUB_ENV
           echo "RELEASE=$RELEASE" >> $GITHUB_ENV
@@ -58,10 +58,10 @@ jobs:
       - name: Build and Push
         uses: docker/bake-action@v6
         with:
-          # Only use the main file (We removed the missing override file)
+          # Only use the main file
           files: ./docker-bake.hcl
           push: true
-          # The Magic Fix: We override the tag HERE instead of using a file
+          # The Magic Fix: We override the tag HERE
           set: |
             default.tags=ghcr.io/${{ github.repository_owner }}/${{ env.APP }}:${{ env.RELEASE }}
             *.cache-from=type=gha
