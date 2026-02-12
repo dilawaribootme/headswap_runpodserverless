@@ -48,6 +48,5 @@ COPY model_setup.py .
 # Fix permissions for the start script
 RUN sed -i 's/\r$//' start.sh && chmod +x start.sh
 
-# Start the container
-
-CMD ["./start.sh"]
+# Start the container (ENTRYPOINT guarantees this always runs first)
+ENTRYPOINT ["/ComfyUI/start.sh"]

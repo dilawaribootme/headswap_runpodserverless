@@ -35,6 +35,17 @@ if [ -f "Comfyui-QwenEditUtils/requirements.txt" ]; then
 fi
 
 if [ -f "ComfyUI_LayerStyle/requirements.txt" ]; then
+    echo "🛡️ Sanitizing LayerStyle requirements..."
+    
+    # 1. AGGRESSIVE FIX: Remove ANY line with 'opencv' to prevent conflicts
+    # This deletes 'opencv-python', 'opencv-contrib-python', etc.
+    sed -i '/opencv/d' ComfyUI_LayerStyle/requirements.txt
+    
+    # 2. PRO ACTIVE FIX: Install the HEADLESS Contrib version (Safe for servers)
+    # This gives LayerStyle the features it needs without the GUI crash
+    pip install --no-cache-dir "opencv-contrib-python-headless==4.9.0.80"
+    
+    # Install the rest of the requirements
     pip install --no-cache-dir -r ComfyUI_LayerStyle/requirements.txt
 fi
 
