@@ -1,11 +1,11 @@
 # Base image (keep yours – we'll override torch)
 FROM runpod/pytorch:2.2.1-py3.10-cuda12.1.1-devel-ubuntu22.04
 
-# Declare bake args so they can be passed
-ARG RELEASE
-ARG CUDA_VERSION
-ARG INDEX_URL
-ARG TORCH_VERSION
+# Declare bake args so they can be passed – with safe defaults for direct builds
+ARG RELEASE="5.2.2"
+ARG CUDA_VERSION="12.4.1"
+ARG INDEX_URL="https://download.pytorch.org/whl/cu124"
+ARG TORCH_VERSION="2.6.0+cu124"
 
 ENV PYTHONUNBUFFERED=1
 
