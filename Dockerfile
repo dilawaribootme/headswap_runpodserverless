@@ -41,15 +41,10 @@ COPY requirements_runpod.txt requirements_runpod.txt
 RUN pip install --upgrade pip --no-cache-dir
 
 # ==============================================================
-# 6. PYTORCH + CUDA ALIGNMENT
-# ==============================================================
+# 6. PYTORCH + CUDA ALIGNMENT (Safe Version)
+# Install a PyTorch version compatible with CUDA 12.1 in the base image
+RUN pip install --no-cache-dir --upgrade torch torchvision torchaudio
 
-# Hardcoded Torch to match base image CUDA (12.1)
-RUN pip install --no-cache-dir --force-reinstall \
-    torch==2.6.0+cu121 \
-    torchvision \
-    torchaudio \
-    --index-url https://download.pytorch.org/whl/cu121
 
 # ==============================================================
 # 7. COMFYUI & CUSTOM REQUIREMENTS
@@ -93,3 +88,4 @@ RUN sed -i 's/\r$//' start.sh && chmod +x start.sh
 # ==============================================================
 
 ENTRYPOINT ["/ComfyUI/start.sh"]
+
