@@ -1,16 +1,29 @@
 runpod
 requests
 einops==0.8.0
-# UPDATE: Upgraded to match PyTorch 2.6.0 (Prevents compatibility crashes)
+# Core AI Libraries (Locked to PyTorch 2.6.0)
 accelerate>=0.34.0
 transformers==4.48.2
 safetensors==0.4.5
 sentencepiece
 protobuf==4.25.3
 Pillow==10.4.0
-opencv-python-headless==4.9.0.80
+
+# ---------------------------------------------------------
+# THE FIX: Global OpenCV Lock (FULL VERSION)
+# We use the standard non-headless 'contrib' version. 
+# This is the only version guaranteed to have 'cv2.ximgproc'
+# for LayerStyle. RunPod will ignore the GUI bits.
+# ---------------------------------------------------------
+opencv-contrib-python==4.9.0.80
+
+# ---------------------------------------------------------
+# THE SHIELD: Lock Numpy to 1.x
+# Prevents custom nodes from upgrading to Numpy 2.0 and crashing.
+# ---------------------------------------------------------
 numpy==1.26.4
-# --- Hotfix Libraries ---
+
+# Hotfix Libraries for Custom Nodes
 comfy-aimdo
 torchsde
 av
