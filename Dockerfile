@@ -1,5 +1,5 @@
-# Base image (Updated to CUDA 12.4 to match PyTorch)
-FROM runpod/pytorch:2.4.0-py3.10-cuda12.4.1-devel-ubuntu22.04
+# Base image (Reverted to the KNOWN WORKING version)
+FROM runpod/pytorch:2.2.1-py3.10-cuda12.1.1-devel-ubuntu22.04
 
 # ENV variables
 ENV PYTHONUNBUFFERED=1
