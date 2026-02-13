@@ -1,14 +1,16 @@
-# Base image (Reverted to the KNOWN WORKING version)
+# ==============================================================
+# 1. BASE IMAGE: Verified stable version (CUDA 12.1)
+# ==============================================================
+
 FROM runpod/pytorch:2.2.1-py3.10-cuda12.1.1-devel-ubuntu22.04
 
-# ENV variables
+# Prevent Python buffering
 ENV PYTHONUNBUFFERED=1
 
-# ARG Defaults (For Build Safety)
-ARG INDEX_URL=https://download.pytorch.org/whl/cu124
-ARG TORCH_VERSION=2.6.0+cu124
+# ==============================================================
+# 2. SYSTEM DEPENDENCIES
+# ==============================================================
 
-# Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     wget \
@@ -16,51 +18,78 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
-# Set working directory
+# ==============================================================
+# 3. WORKDIR
+# ==============================================================
+
 WORKDIR /ComfyUI
 
-# Clone ComfyUI
+# ==============================================================
+# 4. CLONE COMFYUI
+# ==============================================================
+
 RUN git clone --depth 1 https://github.com/comfyanonymous/ComfyUI.git . \
     && rm -rf .git
 
-# --- DEPENDENCY INSTALLATION ---
+# ==============================================================
+# 5. COPY REQUIREMENTS
+# ==============================================================
+
 COPY requirements_runpod.txt requirements_runpod.txt
 
-# Upgrade pip
+# Upgrade pip first
 RUN pip install --upgrade pip --no-cache-dir
 
-# CRITICAL: Install Torch 2.6.0
-RUN pip install --no-cache-dir --force-reinstall \
-    torch==${TORCH_VERSION} \
-    torchvision torchaudio \
-    --index-url ${INDEX_URL}
+# ==============================================================
+# 6. PYTORCH + CUDA ALIGNMENT
+# ==============================================================
 
-# Install official ComfyUI requirements
+# Hardcoded Torch to match base image CUDA (12.1)
+RUN pip install --no-cache-dir --force-reinstall \
+    torch==2.6.0+cu121 \
+    torchvision \
+    torchaudio \
+    --index-url https://download.pytorch.org/whl/cu121
+
+# ==============================================================
+# 7. COMFYUI & CUSTOM REQUIREMENTS
+# ==============================================================
+
+# ComfyUI main requirements
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install your custom RunPod requirements
+# RunPod-specific requirements
 RUN pip install --no-cache-dir -r requirements_runpod.txt
 
-# ---------------------------------------------------------
-# EXTRA SAFETY: FORCE REINSTALL OPENCV
-# This ensures that if any previous step installed a conflicting 
-# version, we overwrite it with the correct one right at the end.
-# ---------------------------------------------------------
+# ==============================================================
+# 8. FINAL LIBRARY OVERRIDE
+# ==============================================================
+
+# Ensures OpenCV is compatible with LayerStyle / custom nodes
 RUN pip install --no-cache-dir --force-reinstall opencv-contrib-python==4.9.0.80
 
-# --- CUSTOM SETUP ---
-COPY setup.sh .
+# ==============================================================
+# 9. CUSTOM NODE SETUP
+# ==============================================================
+
+COPY setup.sh . 
 RUN sed -i 's/\r$//' setup.sh && chmod +x setup.sh && ./setup.sh
 
-# Copy Configuration and Scripts
+# ==============================================================
+# 10. COPY CONFIGS & HANDLER
+# ==============================================================
+
 COPY extra_model_paths.yaml .
 COPY workflow_api.json .
 COPY rp_handler.py .
 COPY model_setup.py .
 COPY start.sh .
 
-# Fix permissions
+# Fix permissions for start script
 RUN sed -i 's/\r$//' start.sh && chmod +x start.sh
 
-# Start
+# ==============================================================
+# 11. ENTRYPOINT
+# ==============================================================
+
 ENTRYPOINT ["/ComfyUI/start.sh"]
