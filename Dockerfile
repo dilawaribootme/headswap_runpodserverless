@@ -1,12 +1,7 @@
-# Base image (keep yours – we'll override torch)
+# Base image
 FROM runpod/pytorch:2.2.1-py3.10-cuda12.1.1-devel-ubuntu22.04
 
-# Declare bake args so they can be passed – with safe defaults for direct builds
-ARG RELEASE="5.2.2"
-ARG CUDA_VERSION="12.4.1"
-ARG INDEX_URL="https://download.pytorch.org/whl/cu124"
-ARG TORCH_VERSION="2.6.0+cu124"
-
+# ENV variables
 ENV PYTHONUNBUFFERED=1
 
 # Install system dependencies
@@ -24,37 +19,37 @@ WORKDIR /ComfyUI
 RUN git clone --depth 1 https://github.com/comfyanonymous/ComfyUI.git . \
     && rm -rf .git
 
-# --- DEPENDENCY INSTALLATION START ---
+# --- DEPENDENCY INSTALLATION ---
 COPY requirements_runpod.txt requirements_runpod.txt
 
 # Upgrade pip
 RUN pip install --upgrade pip --no-cache-dir
 
-# CRITICAL: Install your target PyTorch (overrides base image's old 2.2.1)
+# CRITICAL: Install Torch 2.6.0 (Hardcoded to prevent RunPod build errors)
 RUN pip install --no-cache-dir --force-reinstall \
-    torch==${TORCH_VERSION} \
+    torch==2.6.0+cu124 \
     torchvision torchaudio \
-    --index-url ${INDEX_URL}
+    --index-url https://download.pytorch.org/whl/cu124
 
 # Install official ComfyUI requirements
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install your custom RunPod requirements
+# Install your custom RunPod requirements (This now has the fixed accelerate version)
 RUN pip install --no-cache-dir -r requirements_runpod.txt
-# --- DEPENDENCY INSTALLATION END ---
 
-# Install Custom Nodes
+# --- CUSTOM SETUP ---
 COPY setup.sh .
 RUN sed -i 's/\r$//' setup.sh && chmod +x setup.sh && ./setup.sh
 
-# Copy files
+# Copy Configuration and Scripts
 COPY extra_model_paths.yaml .
 COPY workflow_api.json .
 COPY rp_handler.py .
-COPY start.sh .
 COPY model_setup.py .
+COPY start.sh .
 
-# Permissions
+# Fix permissions
 RUN sed -i 's/\r$//' start.sh && chmod +x start.sh
 
+# Start
 ENTRYPOINT ["/ComfyUI/start.sh"]
