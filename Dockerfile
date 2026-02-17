@@ -4,6 +4,9 @@ FROM runpod/pytorch:2.2.1-py3.10-cuda12.1.1-devel-ubuntu22.04
 # Prevent Python buffering
 ENV PYTHONUNBUFFERED=1
 
+# --------------------------------------------------------------------------------
+ENV CACHE_BUST=2026-02-17_v5.2.3_FIX
+
 # 2. SYSTEM DEPENDENCIES
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
@@ -24,27 +27,31 @@ COPY requirements_runpod.txt requirements_runpod.txt
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel
 
 # 6. ALIGNED PYTORCH INSTALL (The "No-Fail" Version)
-# We use Torch 2.5.1 (Stable, satisfies >2.4 requirement)
-# By NOT adding +cu121 to the version string, we prevent the "Not Found" error.
-# The --index-url ensures it still gets the CUDA-optimized version.
+# We use Torch 2.5.1 (Stable). The --index-url ensures CUDA support.
 RUN pip install --no-cache-dir --force-reinstall \
     torch==2.5.1 \
     torchvision==0.20.1 \
     torchaudio==2.5.1 \
     --index-url https://download.pytorch.org/whl/cu121
 
-# 7. COMFYUI & CUSTOM REQUIREMENTS
+# 7. COMFYUI & BASIC REQUIREMENTS
 RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install --no-cache-dir -r requirements_runpod.txt
 
-# 8. FINAL LIBRARY OVERRIDE (OpenCV Fix)
-# We uninstall all possible variants first to clear any conflicts
-RUN pip uninstall -y opencv-python opencv-contrib-python opencv-python-headless opencv-contrib-python-headless && \
-    pip install --no-cache-dir opencv-contrib-python==4.9.0.80
-
-# 9. CUSTOM NODE SETUP
+# --------------------------------------------------------------------------------
+# 8. CUSTOM NODE SETUP (Moved BEFORE the Library Shield)
+# We run this first so that if it installs bad libraries, we can fix them in Step 9.
+# --------------------------------------------------------------------------------
 COPY setup.sh .
 RUN sed -i 's/\r$//' setup.sh && chmod +x setup.sh && ./setup.sh
+
+# --------------------------------------------------------------------------------
+# 9. FINAL LIBRARY OVERRIDE (The "Shield") - MUST RUN LAST
+# We force-uninstall ALL OpenCV versions and install ONLY the correct one.
+# This guarantees no conflicts, regardless of what setup.sh did.
+# --------------------------------------------------------------------------------
+RUN pip uninstall -y opencv-python opencv-contrib-python opencv-python-headless opencv-contrib-python-headless && \
+    pip install --no-cache-dir opencv-contrib-python==4.9.0.80
 
 # 10. CONFIGS & HANDLER
 COPY extra_model_paths.yaml .
