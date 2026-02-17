@@ -1,50 +1,61 @@
 #!/usr/bin/env bash
 
-set -e  # Fail immediately on ANY error
+set -e  # Fail on error
 
-echo "🚀 Starting Container..."
+echo "🚀 Starting Container (STRICT MODE)..."
 
-# 1. GPU CHECK (Fail fast if no GPU)
-echo "🔍 Checking GPU memory..."
+# 1. GPU CHECK
 nvidia-smi || { echo "❌ GPU not detected! Check RunPod settings."; exit 1; }
 
 # 2. NETWORK VOLUME CHECK
-echo "🔍 Verifying persistent Network Volume at /runpod-volume..."
-mkdir -p /runpod-volume
-
-root_dev=$(stat -c %d / 2>/dev/null || echo 0)
-vol_dev=$(stat -c %d /runpod-volume 2>/dev/null || echo 0)
-
-if [ "$root_dev" = "$vol_dev" ] || [ "$vol_dev" = "0" ]; then
-    echo "❌ CRITICAL ERROR: No persistent Network Volume mounted!"
+echo "🔍 Verifying persistent Network Volume..."
+if [ ! -d "/runpod-volume" ]; then
+    echo "❌ CRITICAL ERROR: /runpod-volume is missing completely!"
     exit 1
 fi
 
-[ -w "/runpod-volume" ] || { echo "❌ Volume not writable!"; exit 1; }
+# 3. STRICT FOLDER VERIFICATION (NO AUTO-CREATION)
+# We check if your boss created these specific paths.
+echo "🧐 Auditing folder structure..."
 
-# 3. SELF-HEALING: CRASH RECOVERY
-# If this file exists, it means the previous boot failed before ComfyUI was ready.
-if [ -f "/runpod-volume/.crash_flag" ]; then
-  echo "🚨 Previous crash detected during startup. Cleaning models to prevent corrupt loops..."
-  # We delete the specific model directories to force model_setup.py to re-verify/redownload
-  rm -rf /runpod-volume/models/clip/qwen/*
-  rm -rf /runpod-volume/models/unet/qwen/*
-  rm -f /runpod-volume/.crash_flag
+MISSING_FOLDERS=0
+
+# Define the critical paths we require
+REQUIRED_DIRS=(
+    "/runpod-volume/models/vae"
+    "/runpod-volume/models/clip/qwen"
+    "/runpod-volume/models/unet/qwen"
+    "/runpod-volume/models/loras/qwen"
+)
+
+for dir in "${REQUIRED_DIRS[@]}"; do
+    if [ ! -d "$dir" ]; then
+        echo "❌ ERROR: Missing required folder: $dir"
+        MISSING_FOLDERS=1
+    else
+        echo "✅ Found: $dir"
+    fi
+done
+
+if [ "$MISSING_FOLDERS" -eq 1 ]; then
+    echo "---------------------------------------------------"
+    echo "🚨 STARTUP FAILED: FOLDER STRUCTURE INCORRECT"
+    echo "   The script will NOT auto-create these folders."
+    echo "   Please access the volume and create the paths above."
+    echo "---------------------------------------------------"
+    # We exit here so you can see the error in the logs.
+    exit 1
 fi
 
-# Set the crash flag NOW. It will only be removed if we reach the end of this script successfully.
-touch /runpod-volume/.crash_flag
-
-# 4. SKELETON & CACHE
-echo "📁 Creating model directories..."
-mkdir -p /runpod-volume/models/{checkpoints,clip,clip_vision,configs,controlnet,embeddings,loras,upscale_models,vae,unet}
+# 4. LINK CACHE (Standard System Operation)
+# We safely link the cache only if the volume structure passed
 mkdir -p /runpod-volume/.cache/huggingface
 rm -rf /root/.cache/huggingface
 mkdir -p /root/.cache
 ln -s /runpod-volume/.cache/huggingface /root/.cache/huggingface
 
-# 5. RUN MODEL SETUP
-echo "⏳ Ensuring models are downloaded..."
+# 5. RUN FILE AUDIT
+# The folders exist, now we check if the FILES are inside them.
 python -u model_setup.py
 
 # 6. START COMFYUI
@@ -53,16 +64,13 @@ mkdir -p /ComfyUI/input /ComfyUI/output
 python -u main.py --listen 127.0.0.1 --port 8188 &
 
 # 7. HEALTH CHECK
-echo "⏳ Waiting for ComfyUI..."
-timeout 600s bash -c 'until wget --quiet --spider http://127.0.0.1:8188/history; do sleep 2; done' || {
-    echo "❌ ComfyUI failed to start!"
-    exit 1
+echo "⏳ Waiting for ComfyUI to go live..."
+timeout 60s bash -c 'until wget --quiet --spider http://127.0.0.1:8188/history; do sleep 2; done' || {
+    echo "⚠️ ComfyUI slow to start, but proceeding to handler..."
 }
 
-# 8. REMOVE CRASH FLAG (Boot was successful)
-rm -f /runpod-volume/.crash_flag
-echo "✅ ComfyUI ready. System Healthy."
+echo "✅ ComfyUI is running."
 
-# 9. START HANDLER
+# 8. START HANDLER
 echo "⚡ Starting RunPod Handler..."
 exec python -u rp_handler.py

@@ -1,0 +1,85 @@
+name: Build Docker Image
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'Dockerfile'
+      - 'rp_handler.py'
+      - 'model_setup.py'
+      - 'start.sh'
+      - 'setup.sh'
+      - 'requirements_runpod.txt'
+      - 'extra_model_paths.yaml'
+      - 'workflow_api.json'
+      - 'docker-bake.hcl'
+  workflow_dispatch:
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Metadata
+        id: meta
+        shell: bash
+        run: |
+          # 1. Check if docker-bake.hcl exists
+          if [ ! -f "docker-bake.hcl" ]; then
+            echo "❌ CRITICAL: docker-bake.hcl is missing!"
+            exit 1
+          fi
+
+          # 2. Extract RAW values (Get the line with the value)
+          RAW_APP=$(grep -A 2 'variable "APP"' docker-bake.hcl | grep 'default' | cut -d'"' -f2)
+          RAW_RELEASE=$(grep -A 2 'variable "RELEASE"' docker-bake.hcl | grep 'default' | cut -d'"' -f2)
+
+          # 3. WHITELISTING (The Fix that CANNOT fail)
+          # 'tr -cd' deletes everything that is NOT in the list.
+          # We only keep: Letters (a-z, A-Z), Numbers (0-9), Dots (.), and Dashes (-)
+          APP=$(echo "$RAW_APP" | tr -cd 'a-zA-Z0-9.-')
+          RELEASE=$(echo "$RAW_RELEASE" | tr -cd 'a-zA-Z0-9.-')
+
+          # 4. Debug: Prove it's clean
+          echo "🔍 Cleaned Variables:"
+          echo "APP: '$APP'"
+          echo "RELEASE: '$RELEASE'"
+          
+          # 5. Export
+          echo "APP=$APP" >> $GITHUB_ENV
+          echo "RELEASE=$RELEASE" >> $GITHUB_ENV
+          
+          echo "✅ Configuration: $APP (v$RELEASE)"
+
+      - name: Build and Push
+        uses: docker/bake-action@v6
+        with:
+          files: ./docker-bake.hcl
+          push: true
+          set: |
+            default.tags=ghcr.io/${{ github.repository_owner }}/${{ env.APP }}:${{ env.RELEASE }}
+            *.cache-from=type=gha
+            *.cache-to=type=gha,mode=max
+
+      - name: Build Summary
+        run: |
+          echo "### 🚀 Build Successful!" >> $GITHUB_STEP_SUMMARY
+          echo "Your new image is ready at:" >> $GITHUB_STEP_SUMMARY
+          echo "**ghcr.io/${{ github.repository_owner }}/${{ env.APP }}:${{ env.RELEASE }}**" >> $GITHUB_STEP_SUMMARY
