@@ -38,8 +38,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install --no-cache-dir -r requirements_runpod.txt
 
 # 8. FINAL LIBRARY OVERRIDE (OpenCV Fix)
-# This solves the 'guidedFilter' crash in your logs
-RUN pip install --no-cache-dir --force-reinstall opencv-contrib-python==4.9.0.80
+# We uninstall all possible variants first to clear any conflicts
+RUN pip uninstall -y opencv-python opencv-contrib-python opencv-python-headless opencv-contrib-python-headless && \
+    pip install --no-cache-dir opencv-contrib-python==4.9.0.80
 
 # 9. CUSTOM NODE SETUP
 COPY setup.sh .
