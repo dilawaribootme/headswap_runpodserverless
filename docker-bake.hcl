@@ -12,7 +12,7 @@ variable "APP" {
 
 # CHANGE: Bumped version to 5.2.2 to include the setup.sh fix
 variable "RELEASE" {
-    default = "5.2.2"
+    default = "5.2.3"
 }
 
 variable "CU_VERSION" {
