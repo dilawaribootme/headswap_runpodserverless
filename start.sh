@@ -14,8 +14,7 @@ if [ ! -d "/runpod-volume" ]; then
     exit 1
 fi
 
-# 3. STRICT FOLDER VERIFICATION (NO AUTO-CREATION)
-# We check if your boss created these specific paths.
+# 3. STRICT FOLDER VERIFICATION
 echo "🧐 Auditing folder structure..."
 
 MISSING_FOLDERS=0
@@ -61,7 +60,8 @@ python -u model_setup.py
 # 6. START COMFYUI
 echo "🔄 Starting ComfyUI..."
 mkdir -p /ComfyUI/input /ComfyUI/output
-python -u main.py --listen 127.0.0.1 --port 8188 &
+# MODIFICATION: Added --highvram and --disable-smart-memory to force persistence
+python -u main.py --listen 127.0.0.1 --port 8188 --highvram --disable-smart-memory &
 
 # 7. HEALTH CHECK
 echo "⏳ Waiting for ComfyUI to go live..."
