@@ -60,8 +60,7 @@ python -u model_setup.py
 # 6. START COMFYUI
 echo "🔄 Starting ComfyUI..."
 mkdir -p /ComfyUI/input /ComfyUI/output
-# MODIFICATION: Added --highvram and --disable-smart-memory to force persistence
-python -u main.py --listen 127.0.0.1 --port 8188 --highvram --disable-smart-memory &
+python -u main.py --listen 127.0.0.1 --port 8188 &
 
 # 7. HEALTH CHECK
 echo "⏳ Waiting for ComfyUI to go live..."
